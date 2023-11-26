@@ -4,20 +4,21 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
 export default {
-  props: ['msg'],
-  setup(props) {
+  setup() {
     return {
-      count: ref(0),
       map: null,
       filterType: null,
-      data: [],
       layersGroup: new L.LayerGroup(),
+      data: [],
+      smellsTypes: [],
     };
   },
   async mounted() {
     this.createMap();
     await this.fetchData();
     this.placeMarkersByData();
+    this.smellTypeGetter();
+    this.$forceUpdate(); // there are some problem with updating smellsTypes[] and if I dont do forceUpdate it will not update a select data
   },
   methods: {
     createMap() {
@@ -38,95 +39,76 @@ export default {
         console.error(err);
       }
     },
-    placeFilteredMarkers(filterType = null) {
-      console.log('changedFilter');
-      switch (filterType) {
-        case 'null': {
-          this.placeMarkersByData();
-          break;
-        }
-        case 'iodine': {
-          const filteredData = this.dataFilter('Йод');
-          this.placeMarkersByData(filteredData);
-          break;
-        }
-        case 'rot': {
-          const filteredData = this.dataFilter('Гниль');
-          this.placeMarkersByData(filteredData);
-          break;
-        }
-        case 'plastic': {
-          const filteredData = this.dataFilter('Горілий пластик');
-          this.placeMarkersByData(filteredData);
-          break;
-        }
-        case 'metal': {
-          const filteredData = this.dataFilter('Металургійний гар');
-          this.placeMarkersByData(filteredData);
-          break;
-        }
-        case 'chemistry': {
-          const filteredData = this.dataFilter('Хімія');
-          this.placeMarkersByData(filteredData);
-          break;
-        }
-        case 'sulfide': {
-          const filteredData = this.dataFilter('Сірководень');
-          this.placeMarkersByData(filteredData);
-          break;
-        }
-      }
-    },
     placeMarkersByData(filteredData = this.data) {
       this.map.removeLayer(this.layersGroup);
       this.layersGroup = new L.LayerGroup();
       filteredData.forEach((element) => {
-          L.marker([element.latitude, element.longitude]).addTo(this.layersGroup);
+        L.marker([element.latitude, element.longitude]).addTo(this.layersGroup);
       });
-      this.map.addLayer(this.layersGroup)
+      this.map.addLayer(this.layersGroup);
     },
-    dataFilter(smellName){
-      const filteredData = this.data.filter(
-            (elem) => elem.kind_of_smell === smellName
-      );
+
+    placeFilteredMarkers(filterType = null) {
+      if (this.smellsTypes.includes(filterType) || filterType === 'none') {
+        const filteredData = this.dataFilter(filterType);
+        this.placeMarkersByData(filteredData);
+      } else if (filterType === null) {
+        this.placeMarkersByData();
+      }
+    },
+
+    dataFilter(smellName) {
+      let filteredData = null;
+      if (smellName !== 'none') {
+        filteredData = this.data.filter(
+          (elem) => elem.kind_of_smell === smellName
+        );
+      } else {
+        filteredData = this.data.filter(
+          (elem) => !this.smellsTypes.includes(elem.kind_of_smell)
+        );
+      }
+
       return filteredData;
-    }
+    },
+    smellTypeGetter() {
+      this.data.forEach((elem) => {
+        if (
+          elem.kind_of_smell &&
+          typeof elem.kind_of_smell === 'string' &&
+          !this.smellsTypes.includes(elem.kind_of_smell)
+        ) {
+          this.smellsTypes.push(elem.kind_of_smell);
+        }
+      });
+    },
   },
 };
 </script>
 
 <template>
   <section class="flex flex-col gap-5">
-    <div id="map" class="h-[600px] w-[300px] md:h-[400px] md:w-[500px] lg:h-[500px] lg:w-[800px]"></div>
+    <div
+      id="map"
+      class="h-[600px] w-[300px] md:h-[400px] md:w-[500px] lg:h-[500px] lg:w-[800px]"
+    ></div>
     <h3>Фільтр смороду:</h3>
     <select
+      v-if="smellsTypes.length > 0"
       id="filter"
       class="p-3 border-2 border-black"
-      v-model="this.filterType"
-      @change="placeFilteredMarkers(this.filterType)"
+      v-model="filterType"
+      @change="placeFilteredMarkers(filterType)"
     >
-      <option value="null">Без фільтру</option>
-      <option value="iodine">Йод</option>
-      <option value="rot">Гниль</option>
-      <option value="plastic">Горілий пластик</option>
-      <option value="metal">Металургійний гар</option>
-      <option value="chemistry">Хімія</option>
-      <option value="sulfide">Сірководень</option>
+      <option :value="null">Без фільтру</option>
+      <option value="none">Не визначено</option>
+      <option v-for="smell in this.smellsTypes" :value="`${smell}`">{{ smell }}</option>
     </select>
+    <div v-else>
+      Зачекайте, дані ще завантажуються...
+    </div>
   </section>
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
+<style>
 </style>

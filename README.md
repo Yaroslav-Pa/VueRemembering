@@ -1,7 +1,7 @@
 # Start:
 
-## npm i
+npm i
 
-## npm run dev
+npm run dev
 
-# A data filter was made for API (Vue + Vite + Leaflet).
+## A data filter for API (Vue + Vite + Leaflet) just for practice.

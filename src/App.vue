@@ -1,17 +1,34 @@
-<script setup>
-import HelloWorld from './components/HelloWorld.vue'
+<script >
+import { ref } from 'vue'
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+export default {
+  props: ['msg'],
+  setup(props) {
+    return {
+      count: ref(0),
+      map: null,
+      data: [],
+    }
+  },
+  mounted() {
+    this.map = L.map('map').setView([47.834264774079, 35.14758198304963], 11);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(this.map);
+  }
+}
 </script>
 
 <template>
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
+  <section class="flex flex-col gap-5">
+    <div id="map" style="height: 500px; width: 500px;">
   </div>
-  <HelloWorld msg="Vite + Vue" />
+  <input type='' class="px-5 py-3 bg-white"/>
+  </section>
+
 </template>
 
 <style scoped>
